@@ -1,0 +1,30 @@
+{
+  "name": "yudi",
+  "version": "1.0.0",
+  "description": "tool of create genesisBlock.json",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chen4w/yudi.git"
+  },
+  "keywords": [
+    "nodejs",
+    "tool",
+    "genesisBlock.json"
+  ],
+  "author": "c4w",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chen4w/yudi/issues"
+  },
+  "homepage": "https://github.com/chen4w/yudi#readme",
+  "dependencies": {
+    "js-nacl": "^0.6.0",
+     "browserify-bignum": "^1.3.0-2",
+     "bytebuffer": "^4.0.0",
+    "lisk-js": "^0.2.0"
+  }
+}
