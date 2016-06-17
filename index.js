@@ -193,17 +193,6 @@ map_passphrases[master_id]=passphrase;
 map_keys[master_id]=key_pair;
 map_addrs[master_id]=lisk.crypto.getAddress[key_pair.publicKey];
 
-var voter_cout=2;
-//生成1个投票人的密钥对和地址
-for(var i=0; i<voter_cout; i++){
-    var voter_id = 'voter_'+i;
-    var passphrase="passphrase.voter_"+i;
-    map_passphrases[voter_id]=passphrase;
-    key_pair=lisk.crypto.getKeys(passphrase);
-    map_keys[voter_id]=key_pair;
-    var addr =lisk.crypto.getAddress(key_pair.publicKey);
-    map_addrs[voter_id]=addr;
-}
 
 //产生第一个交易，为第一个投票人写入初始的余额
 var totalAmount      = 1000 * Math.pow(10, 8); // 100000000000
@@ -212,6 +201,7 @@ transactions.push(transaction);
 
 //加快debug速度,101用2
 var delegate_cout=2;
+var votes=[];
 //生成101个代表的密钥对和地址
 for(var i=0; i<delegate_cout; i++){
     var delegate_id = 'delegate_'+i;
@@ -223,14 +213,70 @@ for(var i=0; i<delegate_cout; i++){
     var addr =lisk.crypto.getAddress(key_pair.publicKey);
     map_addrs[delegate_id]=addr;
     //101个委托人生成交易（自己注册成type2）；
-    var transaction = lisk.delegate.createDelegate(passphrase, "genesis_"+i);
+    //var transaction = lisk.delegate.createDelegate(passphrase, "genesis_"+i);
+    //弃用lisk-js api, 自行组织transaction
+    var transaction = {
+        type: 2,
+        amount: 0,
+        fee: 0,
+        timestamp: 0,
+        recipientId: null,
+        senderId: addr,
+        senderPublicKey: key_pair.publicKey,
+        asset: {
+            delegate: {
+                username: "genesis_"+i
+            }
+        }
+    }
+
+    bytes = getTransactionBytes(transaction);
+    transaction.signature = sign(map_keys[master_id], bytes);
+    bytes = getTransactionBytes(transaction);
+    transaction.id = getId(bytes);
+    
     transactions.push(transaction);
     //投票人给101各委托人的投票交易（交易类型type3）；
+    //var voter_id = 'voter_'+i;
+     //弃用lisk-js api, 自行组织transaction
+     votes.push("+" + key_pair.publicKey);
+    //transaction = lisk.vote.createVote(map_passphrases[voter_id], ["+"+key_pair.publicKey]);
+
+    //transactions.push(transaction);
+}
+ //弃用lisk-js api, 自行组织vote transaction
+var voter_cout=2;
+//生成1个投票人的密钥对和地址
+for(var i=0; i<voter_cout; i++){
     var voter_id = 'voter_'+i;
-    transaction = lisk.vote.createVote(map_passphrases[voter_id], ["+"+key_pair.publicKey]);
-    transactions.push(transaction);
+    var passphrase="passphrase.voter_"+i;
+    map_passphrases[voter_id]=passphrase;
+    key_pair=lisk.crypto.getKeys(passphrase);
+    map_keys[voter_id]=key_pair;
+    var addr =lisk.crypto.getAddress(key_pair.publicKey);
+    map_addrs[voter_id]=addr;
+    var voteTransaction = {
+        type: 3,
+        amount: 0,
+        fee: 0,
+        timestamp: 0,
+        recipientId: map_addrs[master_id],
+        senderId: map_addrs[master_id],
+        senderPublicKey: map_keys[master_id].publicKey,
+        asset: {
+            votes: votes
+        }
+    }
+
+    bytes = getTransactionBytes(voteTransaction);
+    voteTransaction.signature = sign(map_keys[master_id], bytes);
+    bytes = getTransactionBytes(voteTransaction);
+    voteTransaction.id = getId(bytes);
+
+    transactions.push(voteTransaction);    
 }
 
+ 
 //构造block,借鉴cli\helpers\block.js
 var payloadLength = 0,payloadHash = crypto.createHash('sha256');
 transactions = transactions.sort(function compare(a, b) {
@@ -252,6 +298,7 @@ payloadHash = payloadHash.digest();
 
 var block = {
     version: 0,
+    reward: 0,
     totalAmount: totalAmount,
     totalFee: 0,
     payloadHash: payloadHash.toString('hex'),
@@ -270,4 +317,4 @@ bytes = getBytes(block);
 block.id = getId(bytes);
 
 
-console.log(block);
+console.log(util.inspect(block, false, null));
