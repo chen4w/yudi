@@ -191,13 +191,9 @@ var passphrase = "passphrase.master";
 var key_pair = lisk.crypto.getKeys(passphrase);
 map_passphrases[master_id]=passphrase;
 map_keys[master_id]=key_pair;
-map_addrs[master_id]=lisk.crypto.getAddress[key_pair.publicKey];
+map_addrs[master_id]=lisk.crypto.getAddress(key_pair.publicKey);
 
 
-//产生第一个交易，为第一个投票人写入初始的余额
-var totalAmount      = 1000 * Math.pow(10, 8); // 100000000000
-var transaction = lisk.transaction.createTransaction(map_addrs['voter_0'], totalAmount, map_passphrases[master_id]);
-transactions.push(transaction);
 
 //加快debug速度,101用2
 var delegate_cout=2;
@@ -275,6 +271,25 @@ for(var i=0; i<voter_cout; i++){
 
     transactions.push(voteTransaction);    
 }
+
+//产生第一个交易，为第一个投票人写入初始的余额
+var totalAmount      = 1000 * Math.pow(10, 8); // 100000000000
+//var transaction = lisk.transaction.createTransaction(map_addrs['voter_0'], totalAmount, map_passphrases[master_id]);
+var balanceTransaction = {
+    type: 0,
+    amount: totalAmount,
+    fee: 0,
+    timestamp: 0,
+    recipientId: map_addrs['voter_0'],
+    senderId: map_addrs[master_id],
+    senderPublicKey: map_keys[master_id].publicKey
+};
+var bytes = getTransactionBytes(balanceTransaction);
+balanceTransaction.signature = sign(map_keys[master_id], bytes);
+bytes = getTransactionBytes(balanceTransaction);
+balanceTransaction.id = getId(bytes);
+
+transactions.push(balanceTransaction);
 
  
 //构造block,借鉴cli\helpers\block.js
