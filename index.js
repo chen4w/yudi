@@ -7,6 +7,7 @@ var bignum = require('browserify-bignum');
 
 var nacl_factory = require('js-nacl');
 var nacl = nacl_factory.instantiate();
+var fs = require('fs');
 
 
 
@@ -242,7 +243,7 @@ for(var i=0; i<delegate_cout; i++){
 }
  //弃用lisk-js api, 自行组织vote transaction
 var voter_cout=2;
-//生成1个投票人的密钥对和地址
+//生成投票人的密钥对和地址
 for(var i=0; i<voter_cout; i++){
     var voter_id = 'voter_'+i;
     var passphrase="passphrase.voter_"+i;
@@ -251,26 +252,26 @@ for(var i=0; i<voter_cout; i++){
     map_keys[voter_id]=key_pair;
     var addr =lisk.crypto.getAddress(key_pair.publicKey);
     map_addrs[voter_id]=addr;
-    var voteTransaction = {
-        type: 3,
-        amount: 0,
-        fee: 0,
-        timestamp: 0,
-        recipientId: map_addrs[master_id],
-        senderId: map_addrs[master_id],
-        senderPublicKey: map_keys[master_id].publicKey,
-        asset: {
-            votes: votes
-        }
-    }
-
-    bytes = getTransactionBytes(voteTransaction);
-    voteTransaction.signature = sign(map_keys[master_id], bytes);
-    bytes = getTransactionBytes(voteTransaction);
-    voteTransaction.id = getId(bytes);
-
-    transactions.push(voteTransaction);    
 }
+
+//生成投票交易
+var voteTransaction = {
+    type: 3,
+    amount: 0,
+    fee: 0,
+    timestamp: 0,
+    recipientId: map_addrs[master_id],
+    senderId: map_addrs[master_id],
+    senderPublicKey: map_keys[master_id].publicKey,
+    asset: {
+        votes: votes
+    }
+}
+bytes = getTransactionBytes(voteTransaction);
+voteTransaction.signature = sign(map_keys[master_id], bytes);
+bytes = getTransactionBytes(voteTransaction);
+voteTransaction.id = getId(bytes);
+transactions.push(voteTransaction);    
 
 //产生第一个交易，为第一个投票人写入初始的余额
 var totalAmount      = 1000 * Math.pow(10, 8); // 100000000000
@@ -330,6 +331,14 @@ var bytes = getBytes(block);
 block.blockSignature = sign(map_keys[master_id], bytes);
 bytes = getBytes(block);
 block.id = getId(bytes);
+//console.log(util.inspect(block, false, null));
 
+var outputFilename = '/tmp/genesisBlock.json';
 
-console.log(util.inspect(block, false, null));
+fs.writeFile(outputFilename, JSON.stringify(block, null, 2), function(err) {
+    if(err) {
+      console.log(err);
+    } else {
+      console.log("JSON saved to " + outputFilename);
+    }
+}); 
