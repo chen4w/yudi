@@ -183,6 +183,7 @@ var map_keys = {};
 var map_addrs ={};
 var map_passphrases ={};
 var transactions=[];
+var delegates=[];
 var totalAmount="10000000000000000";
 
 var master_id ='master';
@@ -209,6 +210,13 @@ for(var i=0; i<delegate_cout; i++){
     map_keys[delegate_id]=key_pair;
     var addr =lisk.crypto.getAddress(key_pair.publicKey);
     map_addrs[delegate_id]=addr;
+    var username = "genesis_"+i;
+    delegates.push({
+        secret:passphrase,
+        address:addr,
+        publicKey:key_pair.publicKey,
+        username:username
+    });
     //101个委托人生成交易（自己注册成type2）；
     //var transaction = lisk.delegate.createDelegate(passphrase, "genesis_"+i);
     //弃用lisk-js api, 自行组织transaction
@@ -222,7 +230,7 @@ for(var i=0; i<delegate_cout; i++){
         senderPublicKey: key_pair.publicKey,
         asset: {
             delegate: {
-                username: "genesis_"+i
+                username: username
             }
         }
     }
@@ -237,9 +245,6 @@ for(var i=0; i<delegate_cout; i++){
     //var voter_id = 'voter_'+i;
      //弃用lisk-js api, 自行组织transaction
      votes.push("+" + key_pair.publicKey);
-    //transaction = lisk.vote.createVote(map_passphrases[voter_id], ["+"+key_pair.publicKey]);
-
-    //transactions.push(transaction);
 }
  //弃用lisk-js api, 自行组织vote transaction
 var voter_cout=2;
@@ -331,14 +336,39 @@ var bytes = getBytes(block);
 block.blockSignature = sign(map_keys[master_id], bytes);
 bytes = getBytes(block);
 block.id = getId(bytes);
-//console.log(util.inspect(block, false, null));
+//write to genesisBlock.json
+var fp_block = '/tmp/genesisBlock.json';
 
-var outputFilename = '/tmp/genesisBlock.json';
-
-fs.writeFile(outputFilename, JSON.stringify(block, null, 2), function(err) {
+fs.writeFile(fp_block, JSON.stringify(block, null, 2), function(err) {
     if(err) {
       console.log(err);
     } else {
-      console.log("JSON saved to " + outputFilename);
+      console.log("JSON saved to " + fp_block);
+    }
+}); 
+//write to genesisDelegates.json
+var genesisDelegates={
+    "accounts": [
+    {
+      "address": map_addrs[master_id],
+      "publicKey": map_keys[master_id].publicKey,
+      "balance": totalAmount,
+      "secondPublicKey": null
+    }
+  ],
+  "delegates":delegates,
+  "votes": {
+    "publicKeys": [
+      map_keys[master_id].publicKey
+    ],
+    "votes":votes
+  }
+};
+var fn_delegates = '/tmp/genesisDelegates.json';
+fs.writeFile(fn_delegates, JSON.stringify(genesisDelegates, null, 2), function(err) {
+    if(err) {
+      console.log(err);
+    } else {
+      console.log("JSON saved to " + fn_delegates);
     }
 }); 
